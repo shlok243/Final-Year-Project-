@@ -1,0 +1,205 @@
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0e0c;
+    color: #e8f5e9;
+    font-family: 'Courier New', monospace;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-icon {
+    width: 32px; height: 32px;
+    border: 2px solid #4ade80;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #4ade80; font-weight: bold;
+  }
+  .brand-name { font-size: 18px; font-weight: bold; letter-spacing: 1px; }
+  .brand-sub { font-size: 10px; color: #6b8f76; letter-spacing: 1px; }
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: #4ade80; letter-spacing: 1px;
+  }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #4ade80;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .status-label {
+    text-align: center; font-size: 11px; color: #6b8f76;
+    letter-spacing: 2px; margin-bottom: 8px;
+  }
+  .status-title {
+    text-align: center; font-size: 36px; font-weight: bold;
+    letter-spacing: 1px; margin-bottom: 4px;
+    transition: color 0.3s;
+  }
+  .status-title.clear { color: #e8f5e9; }
+  .status-title.detected { color: #ff4d4d; }
+  .status-sub {
+    text-align: center; font-size: 13px; color: #6b8f76; margin-bottom: 32px;
+  }
+
+  .gauge-wrap { display: flex; justify-content: center; margin-bottom: 32px; }
+  .gauge { position: relative; width: 260px; height: 260px; }
+  .gauge svg { transform: rotate(-90deg); }
+  .gauge-bg { fill: none; stroke: #16261a; stroke-width: 10; }
+  .gauge-fill {
+    fill: none; stroke: #4ade80; stroke-width: 10; stroke-linecap: round;
+    transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;
+  }
+  .gauge-fill.detected { stroke: #ff4d4d; }
+  .gauge-center {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .gauge-label { font-size: 11px; color: #6b8f76; letter-spacing: 2px; margin-bottom: 6px; }
+  .gauge-value { font-size: 48px; font-weight: bold; color: #4ade80; }
+  .gauge-value.detected { color: #ff4d4d; }
+  .gauge-threshold { font-size: 11px; color: #6b8f76; margin-top: 6px; }
+
+  .stats-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+    background: #16261a; border: 1px solid #16261a; margin-bottom: 20px;
+  }
+  .stat-box { background: #0a0e0c; padding: 16px; text-align: center; }
+  .stat-label { font-size: 10px; color: #6b8f76; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-value { font-size: 22px; font-weight: bold; color: #e8f5e9; }
+  .stat-sub { font-size: 10px; color: #4ade80; margin-top: 4px; letter-spacing: 1px; }
+
+  .trace-box {
+    border: 1px solid #16261a; padding: 16px; margin-bottom: 20px;
+  }
+  .trace-label { font-size: 10px; color: #6b8f76; letter-spacing: 1px; margin-bottom: 10px; }
+  .trace-svg { width: 100%; height: 60px; display: block; }
+
+  .calibrate-btn {
+    width: 100%; padding: 14px;
+    background: transparent; border: 1px solid #4ade80; color: #4ade80;
+    font-family: inherit; font-size: 12px; letter-spacing: 2px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .calibrate-btn:hover { background: #4ade80; color: #0a0e0c; }
+  .calibrate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+</style>
+
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">&#960;</div>
+    <div>
+      <div class="brand-name">CSI PRESENCE</div>
+      <div class="brand-sub">LIVE ESP32-S3</div>
+    </div>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div>LIVE HARDWARE</div>
+</div>
+
+<div class="status-label">CAMERA-FREE WI-FI SENSING</div>
+<div class="status-title clear" id="statusTitle">SPACE IS CLEAR</div>
+<div class="status-sub">Monitoring the space between your router and ESP32</div>
+
+<div class="gauge-wrap">
+  <div class="gauge">
+    <svg viewBox="0 0 200 200" width="260" height="260">
+      <circle class="gauge-bg" cx="100" cy="100" r="85"></circle>
+      <circle class="gauge-fill" id="gaugeFill" cx="100" cy="100" r="85"
+              stroke-dasharray="534" stroke-dashoffset="534"></circle>
+    </svg>
+    <div class="gauge-center">
+      <div class="gauge-label">RF ENERGY</div>
+      <div class="gauge-value" id="rfEnergy">0.0</div>
+      <div class="gauge-threshold">threshold <span id="thresholdVal">12</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="stats-row">
+  <div class="stat-box">
+    <div class="stat-label">SIGNAL</div>
+    <div class="stat-value" id="signalVal">-- dBm</div>
+    <div class="stat-sub" id="signalQuality">--</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">SESSION PEAK</div>
+    <div class="stat-value" id="peakVal">0.0</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">ESP32 NODE</div>
+    <div class="stat-value">01</div>
+  </div>
+</div>
+
+<div class="trace-box">
+  <div class="trace-label">LIVE RF TRACE</div>
+  <svg class="trace-svg" id="traceSvg" viewBox="0 0 400 60" preserveAspectRatio="none">
+    <polyline id="tracePoly" fill="none" stroke="#4ade80" stroke-width="2" points=""></polyline>
+  </svg>
+</div>
+
+<button class="calibrate-btn" id="calibrateBtn" onclick="calibrate()">CALIBRATE (STAND CLEAR OF ROOM)</button>
+
+<script>
+async function poll() {
+  try {
+    const res = await fetch('/data');
+    const d = await res.json();
+
+    const energy = d.rf_energy;
+    const threshold = d.threshold;
+    const present = energy > threshold;
+
+    document.getElementById('rfEnergy').textContent = energy.toFixed(1);
+    document.getElementById('thresholdVal').textContent = threshold.toFixed(0);
+    document.getElementById('signalVal').textContent = d.signal_dbm + ' dBm';
+    document.getElementById('peakVal').textContent = d.session_peak.toFixed(1);
+
+    const quality = d.signal_dbm > -50 ? 'EXCELLENT' : d.signal_dbm > -70 ? 'GOOD' : 'WEAK';
+    document.getElementById('signalQuality').textContent = quality;
+
+    const title = document.getElementById('statusTitle');
+    const gaugeFill = document.getElementById('gaugeFill');
+    const gaugeValue = document.getElementById('rfEnergy');
+
+    title.textContent = present ? 'PRESENCE DETECTED' : 'SPACE IS CLEAR';
+    title.className = 'status-title ' + (present ? 'detected' : 'clear');
+    gaugeFill.classList.toggle('detected', present);
+    gaugeValue.classList.toggle('detected', present);
+
+    // gauge fill proportion (cap at 2x threshold for visual range)
+    const pct = Math.min(energy / (threshold * 2), 1);
+    const circumference = 534;
+    gaugeFill.style.strokeDashoffset = circumference * (1 - pct);
+
+    // trace sparkline
+    const trace = d.trace;
+    if (trace.length > 1) {
+      const max = Math.max(...trace, threshold * 1.5, 1);
+      const step = 400 / (trace.length - 1);
+      const points = trace.map((v, i) => `${i * step},${60 - (v / max) * 55 - 2}`).join(' ');
+      document.getElementById('tracePoly').setAttribute('points', points);
+    }
+
+    const btn = document.getElementById('calibrateBtn');
+    btn.disabled = d.calibrating;
+    btn.textContent = d.calibrating ? 'CALIBRATING...' : 'CALIBRATE (STAND CLEAR OF ROOM)';
+  } catch (e) {
+    // server not reachable yet, ignore
+  }
+}
+
+async function calibrate() {
+  await fetch('/calibrate', { method: 'POST' });
+}
+
+setInterval(poll, 200);
+poll();
+</script>
